@@ -124,7 +124,7 @@ var Grabr = {
 	    		bpp: ImageInfo.getField(img, "bpp"), /* Bits per pixel */
 	    		alpha: ImageInfo.getField(img, "alpha"),
 	    		bytes: ImageInfo.getField(img, "byteSize"),
-	    		exif: ImageInfo.getField(img, "exif").toSource()
+	    		exif: ImageInfo.getField(img, "exif").toString()
 	    	}
 			Grabr.images.push(imgData);
 			if(Grabr.num === Grabr.testNum) { Grabr.printImages(); }
