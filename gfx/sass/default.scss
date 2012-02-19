@@ -1,0 +1,30 @@
+@import "compass/base";
+@import "compass/css3";
+
+$im: !important;
+
+a { color: #000 $im; }
+a:hover { text-decoration: underline $im; }
+
+#grabr-header { position: fixed; height: 70px; background-color: rgba(255,255,255,0.95); width: 100%; z-index: 110002; top: 0; cursor: pointer; text-align: left $im;
+	@include box-shadow(0 0 7px #bbb);
+	#grabr-logo { margin: 17px 20px; width: 117px; height: (76px / 2); background: transparent url('logo.png') 0 0 no-repeat; float: left; }
+	#grabr-notices { height: 70px; margin: 0;
+		#grabr-notice-title { width: 50px; font: {weight: bold; size: 15px;} }
+		td { line-height: 12px; font-size: 11px; color: #000; vertical-align: center; height: 70px; padding: 0 30px 0 0; } }
+	#grabr-colors { margin: 22px 50px; float: left; }
+	.grabr-bg-color { width: 26px; height: 26px; @include box-shadow(0 0 5px #ddd); background-color: #aaa; margin: 0 0 0 10px; float: left; 
+		&:first-child { background-color: #fff; } 
+		&:last-child { background-color: #000; } } }
+
+#grabr-screen { position: fixed; width: 100%; height: 100%; left: 0; top: 0; background-color: rgba(255,255,255,0.95); z-index: 110000;}
+
+#grabr-img-tot { font: { size: 25px; weight: bold; family: Helvetica, Arial, sans-serif; } margin: 20px; }
+
+#grabr-images { position: absolute; top: 100px; left: 0; width: 100%; z-index: 110001; text-align: left $im;
+	.grabr-image-area { clear: both; } 
+ 	.grabr-image { margin: 20px 0 0 20px; padding: 2px; border: 1px solid #bbb; text-align: left; }
+	.grabr-detail-table { background-color: #333; color: #fff; width: 800px; margin: 0 0 50px 20px; border: 1px solid #bbb;
+		a { color: #fff $im; }
+		td, th { padding: 2px 7px; text-align: center; vertical-align: top; font-size: 11px $im; } }
+}

@@ -1,0 +1,19 @@
+javascript:
+
+	outText = '';
+	
+	for(i=0;i < document.images.length; i++) {
+		
+		if(outText.indexOf(document.images[i].src)==-1) {
+			outText += '<tr><td><img src='+document.images[i].src+'></td><td>' + document.images[i].height+'</td><td>'+document.images[i].width+'</td><td>'+document.images[i].src+'</td></tr>'
+		}
+	};
+	
+	if(outText!='') {
+		imgWindow = window.open('','imgWin','width=800,height=600');
+		imgWindow.document.write ('<table border=1 cellpadding=10><tr><th>Image</th><th>Height</th><th>Width</th><th>URL</th></tr>'+outText+'</table>');
+		imgWindow.document.close()
+	} else {
+		alert('No images!')
+	}
+
