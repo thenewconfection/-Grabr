@@ -1,5 +1,5 @@
 //javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://grabr.dev/main.js';})();
-//javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://github.com/thenewconfection/-Grabr/blob/master/main.js';})();
+//javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://raw.github.com/thenewconfection/-Grabr/master/main.js';})();
 
 /*
 	Cases to solve:
@@ -57,7 +57,7 @@ var Grabr = {
 			}
 	        setTimeout(Grabr.testForJquery, 100)
 	    } else {
-	    	var insert = '<link rel="stylesheet" href="https://github.com/thenewconfection/-Grabr/blob/master/gfx/default.css" />' //http://grabr.dev/gfx/default.css
+	    	var insert = '<link rel="stylesheet" href="https://raw.github.com/thenewconfection/-Grabr/master/gfx/default.css" />' //http://grabr.dev/gfx/default.css
 	    	insert += '<div id="grabr-header"><div id="grabr-logo"></div>'
 	    	insert += '<div id="grabr-colors"><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div></div>'
 	    	insert += '<table id="grabr-notices"><tr><td id="grabr-notice-title">Notices</td><td id="grabr-notice-info"></td></tr></table></div>' // end of header
