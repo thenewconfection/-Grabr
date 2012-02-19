@@ -25,7 +25,7 @@ var Grabr = {
 		cssFileName: /[^\/]*css.*$/,
 		revRemove: /\w*\/$/,
 		isImg: /(png)|(jpg)|(jpeg)|(gif)|(bmp)/i,
-		marklet: /grabr\.dev/,
+		marklet: /raw\.github\.com/,
 		relURL: /^\.{0,2}\//,
 		base64: /base64/
 	},
@@ -57,7 +57,7 @@ var Grabr = {
 			}
 	        setTimeout(Grabr.testForJquery, 100)
 	    } else {
-	    	var insert = '<link rel="stylesheet" href="https://raw.github.com/thenewconfection/-Grabr/master/gfx/default.css" />' //http://grabr.dev/gfx/default.css
+	    	var insert = '<link type="text/css" rel="stylesheet" href="https://raw.github.com/thenewconfection/-Grabr/master/gfx/default.css" />' //http://grabr.dev/gfx/default.css
 	    	insert += '<div id="grabr-header"><div id="grabr-logo"></div>'
 	    	insert += '<div id="grabr-colors"><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div></div>'
 	    	insert += '<table id="grabr-notices"><tr><td id="grabr-notice-title">Notices</td><td id="grabr-notice-info"></td></tr></table></div>' // end of header
