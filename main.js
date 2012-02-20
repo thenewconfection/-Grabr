@@ -1,5 +1,5 @@
 //javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://grabr.dev/main.js';})();
-//javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://raw.github.com/thenewconfection/-Grabr/master/main.js';})();
+//javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://thenewconfection.se/projects/grabr/main.js';})();
 
 /*
 	Cases to solve:
@@ -25,7 +25,7 @@ var Grabr = {
 		cssFileName: /[^\/]*css.*$/,
 		revRemove: /\w*\/$/,
 		isImg: /(png)|(jpg)|(jpeg)|(gif)|(bmp)/i,
-		marklet: /raw\.github\.com/,
+		marklet: /thenewconfection\.se/,
 		relURL: /^\.{0,2}\//,
 		base64: /base64/
 	},
@@ -57,7 +57,7 @@ var Grabr = {
 			}
 	        setTimeout(Grabr.testForJquery, 100)
 	    } else {
-	    	var insert = '<link type="text/css" rel="stylesheet" href="//raw.github.com/thenewconfection/-Grabr/master/gfx/default.css" />' //http://grabr.dev/gfx/default.css
+	    	var insert = '<link type="text/css" rel="stylesheet" href="http://thenewconfection.se/projects/grabr/gfx/default.css" />' //http://grabr.dev/gfx/default.css
 	    	insert += '<div id="grabr-header"><div id="grabr-logo"></div>'
 	    	insert += '<div id="grabr-colors"><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div></div>'
 	    	insert += '<table id="grabr-notices"><tr><td id="grabr-notice-title">Notices</td><td id="grabr-notice-info"></td></tr></table></div>' // end of header
@@ -124,7 +124,7 @@ var Grabr = {
 	    		bpp: ImageInfo.getField(img, "bpp"), /* Bits per pixel */
 	    		alpha: ImageInfo.getField(img, "alpha"),
 	    		bytes: ImageInfo.getField(img, "byteSize"),
-	    		exif: ImageInfo.getField(img, "exif").toString()
+	    		exif: ImageInfo.getField(img, "exif")
 	    	}
 			Grabr.images.push(imgData);
 			if(Grabr.num === Grabr.testNum) { Grabr.printImages(); }
@@ -281,9 +281,20 @@ var Grabr = {
 				errArr.push({'num': i, 'src': Grabr.images[i].src}) 
 				errLen++;	
 			}
+			var exifData = "",
+				oData = Grabr.images[i].exif;
+			for (var a in oData) {
+				if (oData.hasOwnProperty(a)) {
+					if (typeof oData[a] == "object") {
+						exifData += a + " : [" + oData[a].length + " values]<br />";
+					} else {
+						exifData += a + " : " + oData[a] + "<br />";
+					}
+				}
+			}
 			imgs += '<div id="grabr-'+i+'" class="grabr-image-area"><img class="grabr-image" src="' + Grabr.images[i].src + '" /><br />';
 			imgs += '<table class="grabr-detail-table"><thead><tr><th>Source</th><th>Format</th><th>Width</th><th>Height</th><th>Bits</th><th>Alpha</th><th>Size</th><th>EXIF</th></tr></thead>';
-			imgs += '<tbody><tr><td id="grabr-img">'+Grabr.images[i].src+'</td><td id="grabr-for">'+Grabr.images[i].format+'</td><td id="grabr-w">'+Grabr.images[i].width+'</td><td id="grabr-h">'+Grabr.images[i].height+'</td><td>'+Grabr.images[i].bpp+'</td><td>'+Grabr.images[i].alpha+'</td><td>'+Grabr.images[i].bytes+'</td><td>'+Grabr.images[i].exif+'</td></tr></tbody></table></div>';
+			imgs += '<tbody><tr><td class="grabr-wide-col" id="grabr-img">'+Grabr.images[i].src+'</td><td id="grabr-for">'+Grabr.images[i].format+'</td><td id="grabr-w">'+Grabr.images[i].width+'</td><td id="grabr-h">'+Grabr.images[i].height+'</td><td>'+Grabr.images[i].bpp+'</td><td>'+Grabr.images[i].alpha+'</td><td>'+Grabr.images[i].bytes+'</td><td  class="grabr-wide-col">'+exifData+'</td></tr></tbody></table></div>';
 		}
 		
 		$('body').append('<div id="grabr-images"><p id="grabr-img-tot">Total images found '+len+'</p>'+imgs+'</div>');

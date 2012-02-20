@@ -24,7 +24,8 @@ a:hover { text-decoration: underline $im; }
 #grabr-images { position: absolute; top: 100px; left: 0; width: 100%; z-index: 110001; text-align: left $im;
 	.grabr-image-area { clear: both; } 
  	.grabr-image { margin: 20px 0 0 20px; padding: 2px; border: 1px solid #bbb; text-align: left; }
-	.grabr-detail-table { background-color: #333; color: #fff; width: 800px; margin: 0 0 50px 20px; border: 1px solid #bbb;
+	.grabr-detail-table { background-color: #333; color: #fff; width: 1000px; margin: 0 0 50px 20px; border: 1px solid #bbb;
 		a { color: #fff $im; }
-		td, th { padding: 2px 7px; text-align: center; vertical-align: top; font-size: 11px $im; } }
+		td, th { padding: 2px 7px; text-align: left $im; vertical-align: top; font-size: 11px $im;
+			&.grabr-wide-col { width: 300px; } } }
 }
