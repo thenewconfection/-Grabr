@@ -1,11 +1,5 @@
-//javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://grabr.dev/main.js';})();
 //javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://thenewconfection.se/projects/grabr/main.js';})();
 
-/*
-	Cases to solve:
-		external CSS sheets on different sub-domain,
-		favicons
-*/
 
 var Grabr = {
 	doc: {
@@ -24,10 +18,11 @@ var Grabr = {
 		extLink: /^(https?:)?(\/\/)/,
 		cssFileName: /[^\/]*css.*$/,
 		revRemove: /\w*\/$/,
-		isImg: /(png)|(jpg)|(jpeg)|(gif)|(bmp)/i,
+		isImg: /(png)|(jpg)|(jpeg)|(gif)|(bmp)|(ico)/i,
 		marklet: /thenewconfection\.se/,
 		relURL: /^\.{0,2}\//,
-		base64: /base64/
+		base64: /base64/,
+		favicon: /icon/i
 	},
 	images: [],
 	notices: [],
@@ -137,15 +132,37 @@ var Grabr = {
 	getCSSImages: function(){
 		var linkURL = [],
 			len = 0,
+			icons = [],
 			imgTagArr = [];
 				
 		//console.log(document.styleSheets)
 		
-		$('link').each(function(){
+		$('link').each(function(){			
 			if($(this).attr('rel').toLowerCase() == 'stylesheet') {
 				linkURL.push($(this).attr('href'));
+			} else if(Grabr.reg.favicon.test($(this).attr('rel'))) {
+				icons.push($(this).attr('href'));
 			}
 		})
+		
+		len = icons.length;
+		
+		for(var i=0; i < len; i++) {
+			var img = "";
+			if(!Grabr.reg.extLink.test(icons[i])) {
+				img = icons[i].replace(Grabr.reg.relURL, "");
+				img = Grabr.doc.locSplit[0] + "//" + Grabr.doc.locSplit[2] + "/" + img
+			} else {
+				img = icons[i];
+			}
+			var imgData = {
+				src: img,
+			    format: false,
+			    width: false,
+			    height: false
+			}
+			Grabr.images.push(imgData)
+		}
 		
 		len = linkURL.length;
 		
@@ -223,6 +240,7 @@ var Grabr = {
 				
 					openedArr.push(urlArr[i]);
 					var img = urlArr[i].replace(/url\("?/, "").replace(/"?\)/,"");
+					img = img.replace(Grabr.reg.relURL, "");
 					
 					//New else if for base 64 images... starts of like this data:image/ image format...
 					if(Grabr.reg.extLink.test(img)) {
