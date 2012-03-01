@@ -178,9 +178,7 @@ var Grabr = {
 				
 				var l = document.styleSheets[i].cssRules.length,
 					urls = [];
-				
-				Grabr.funcTot++;
-				
+								
 			    //Repeats through each rule in the style sheet
 			    for(var j=0; j < l; j++) {
 			    	//Finds styles within the css sheet
@@ -273,6 +271,7 @@ var Grabr = {
 		
 	},
 	readyToPrint: function(){
+		
 		if(Grabr.funcRun === Grabr.funcTot && Grabr.num === Grabr.testNum) {
 			Grabr.printNotices();
 			Grabr.printImages();
