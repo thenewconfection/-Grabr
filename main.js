@@ -76,32 +76,19 @@ var Grabr = {
 			l = imgs.length;
 		
 		for(var i=0; i < l; i++) {
-			//If image is not on the same domain then reduce Grabr.num instead of increasing.
 			if(Grabr.testExternal(imgs[i].src)) {
 				//console.log(Grabr.num, " img tags local")
-				Grabr.num++
-				Grabr.getImageData(imgs[i].src);
-				Grabr.localImgs = true;
+				Grabr.getImageData(imgs[i].src, true);
 			} else {
 				//console.log(Grabr.images.length, " img tags remote")
-				var imgData = {
-					src: imgs[i].src,
-					format: false,
-					width: false,
-					height: false
-				}
-				Grabr.images.push(imgData);
+				Grabr.getImageData(imgs[i].src, false);
 			}
 		}
-		
 		Grabr.funcRun++;
-		console.log(Grabr.funcRun, Grabr.funcTot, 1)
-		if(!Grabr.localImgs && Grabr.funcRun === Grabr.funcTot ) {
-			Grabr.printImages();
-		}
 		
 	},
 	cssPage: function(){
+		//Run if on a document of CSS Styles.
 		var text = $('body').html(),
 			len = Grabr.doc.locSplit.length,
 			href = "",
@@ -112,15 +99,16 @@ var Grabr = {
 			href += ((len-1) !== i) ? '/' : '';
 		}
 		
+		//Creates array of images from css sheet.
 		urls = text.match(Grabr.reg.testURL);
 		
 		Grabr.parseCSSImgs(urls, href);
-		
+		Grabr.funcTot = Grabr.funcRun;
 	},
-	getImageData: function(img){
+	getImageData: function(img, local){
 	    
 
-	    function mycallback() {
+	    function popInfo() {
 	    	Grabr.testNum++;
 	    	// ImageInfo.getAllFields(file) or ImageInfo.getField(file, field)
 	    	var imgData = {
@@ -134,12 +122,22 @@ var Grabr = {
 	    		exif: ImageInfo.getField(img, "exif")
 	    	}
 			Grabr.images.push(imgData);
-			if(Grabr.num === Grabr.testNum && Grabr.funcRun === Grabr.funcTot) { Grabr.printImages(); }
+			Grabr.readyToPrint();
 	    }
 	    
-	    // finally, load the data
-	    ImageInfo.loadInfo(img, mycallback);
-		
+	    if(local) {
+	    	Grabr.num++
+	    	ImageInfo.loadInfo(img, popInfo);
+	    } else {
+	    	var imgData = {
+			    src: img,
+			    format: false,
+			    width: false,
+			    height: false
+			}
+			Grabr.images.push(imgData);
+			Grabr.readyToPrint();
+	    }
 	},
 	getCSSImages: function(){
 		var linkURL = [],
@@ -167,13 +165,8 @@ var Grabr = {
 			} else {
 				img = icons[i];
 			}
-			var imgData = {
-				src: img,
-			    format: false,
-			    width: false,
-			    height: false
-			}
-			Grabr.images.push(imgData)
+			
+			Grabr.getImageData(img, false);
 		}
 		
 		len = linkURL.length;
@@ -210,13 +203,7 @@ var Grabr = {
 			}
 		}
 		
-		Grabr.funcRun++;
-		console.log(Grabr.funcRun, Grabr.funcTot, 2)
-		if(Grabr.funcRun === Grabr.funcTot) {
-			Grabr.printImages();
-		}
-		
-		Grabr.printNotices();		
+		Grabr.funcRun++;				
 	},
 	testExternal: function(link){
 		var split = link.split('/');
@@ -239,7 +226,6 @@ var Grabr = {
 			url = href.replace(Grabr.reg.cssFileName, ""),
 			root = Grabr.doc.locSplit[0] + "//" + Grabr.doc.locSplit[2] + "/";
 		
-		//console.log(href)
 		
 		if(!Grabr.reg.extLink.test(url)) {
 			url = url.replace(Grabr.reg.relURL, "");
@@ -257,47 +243,40 @@ var Grabr = {
 			//Record unique images with correct urls
 			if(!skip) {
 				if(Grabr.reg.isImg.test(urlArr[i])) {
-				
+					var img = "";
+					
 					openedArr.push(urlArr[i]);
-					var img = urlArr[i].replace(/url\("?/, "").replace(/"?\)/,"");
+					
+					img = urlArr[i].replace(/url\("?/, "").replace(/"?\)/,"");
 					img = img.replace(Grabr.reg.relURL, "");
 					
-					//New else if for base 64 images... starts of like this data:image/ image format...
 					if(Grabr.reg.base64.test(img)) {
-						var imgData = {
-							src: img,
-							format: false,
-							width: false,
-							height: false
-						}
-						Grabr.images.push(imgData);
+					
+						Grabr.getImageData(img, false);
 					} else if(Grabr.reg.extLink.test(img)) {
+					
 						var arr = img.match(Grabr.reg.extLink),
 							http = "";
 						http = (arr[0] == '//') ? "http:" : "";
-						Grabr.num++
-						Grabr.localImgs = true;
-						Grabr.getImageData(http + img);
+						Grabr.getImageData(http + img, true);
 					} else if(Grabr.reg.relURL.test(img)) {
-						Grabr.num++
-						Grabr.localImgs = true;
-						Grabr.getImageData(root+img);
+					
+						Grabr.getImageData(root+img, true);
 					} else {
-						Grabr.num++
-						Grabr.localImgs = true;
-						Grabr.getImageData(root+url+img);
+					
+						Grabr.getImageData(root+url+img, true);
 					}
 				}
 			}
 				
 		} //End for loop
 		
-		Grabr.funcRun++;
-		console.log(Grabr.funcRun, Grabr.funcTot, 3)
-		if(Grabr.funcRun === Grabr.funcTot) {
+	},
+	readyToPrint: function(){
+		if(Grabr.funcRun === Grabr.funcTot && Grabr.num === Grabr.testNum) {
+			Grabr.printNotices();
 			Grabr.printImages();
 		}
-		
 	},
 	printNotices: function(){
 		var len = Grabr.notices.length,
