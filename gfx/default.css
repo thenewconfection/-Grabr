@@ -86,6 +86,7 @@ a:hover { text-decoration: underline !important; }
 
 #grabr-header { position: fixed; height: 70px; background-color: rgba(255, 255, 255, 0.95); width: 100%; z-index: 110002; top: 0; cursor: pointer; text-align: left !important; -moz-box-shadow: 0 0 7px #bbbbbb; -webkit-box-shadow: 0 0 7px #bbbbbb; -o-box-shadow: 0 0 7px #bbbbbb; box-shadow: 0 0 7px #bbbbbb; }
 #grabr-header #grabr-logo { margin: 17px 20px; width: 117px; height: 38px; background: transparent url("logo.png") 0 0 no-repeat; float: left; }
+#grabr-header #grabr-notices-details { height: 70px; overflow: auto; }
 #grabr-header #grabr-notices { height: 70px; margin: 0; }
 #grabr-header #grabr-notices #grabr-notice-title { width: 50px; font-weight: bold; font-size: 15px; }
 #grabr-header #grabr-notices td { line-height: 12px; font-size: 11px; color: #000; vertical-align: center; height: 70px; padding: 0 30px 0 0; }

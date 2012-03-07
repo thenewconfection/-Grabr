@@ -1,7 +1,6 @@
 //javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://thenewconfection.se/projects/grabr/main.js';})();
 
 //Mark all iframes and produce their links.
-//Create a counter to check that all functions have been run...
 
 var Grabr = {
 	doc: {
@@ -21,7 +20,7 @@ var Grabr = {
 		cssFileName: /[^\/]*css.*$/,
 		revRemove: /\w*\/$/,
 		isImg: /(png)|(jpg)|(jpeg)|(gif)|(bmp)|(ico)/i,
-		marklet: /thenewconfection\.se/,
+		marklet: /thenewconfection\.se.*grabr/,
 		relURL: /^(\.{0,2}\/)*/,
 		base64: /base64/,
 		favicon: /icon/i
@@ -30,7 +29,15 @@ var Grabr = {
 	localImgs: false,
 	funcRun: 0,
 	funcTot: 2,
-	notices: [],
+	notices: {
+		ss: [],
+		imgs: {
+			file: [],
+			error: [],
+			origin: []
+		},
+		iframes: []
+	},
 	num: 0,
 	testNum: 0,
 	init: function(){
@@ -60,7 +67,7 @@ var Grabr = {
 	    	var insert = '<link type="text/css" rel="stylesheet" href="http://thenewconfection.se/projects/grabr/gfx/default.css" />' //http://grabr.dev/gfx/default.css
 	    	insert += '<div id="grabr-header"><div id="grabr-logo"></div>'
 	    	insert += '<div id="grabr-colors"><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div></div>'
-	    	insert += '<table id="grabr-notices"><tr><td id="grabr-notice-title">Notices</td><td id="grabr-notice-info"></td></tr></table></div>' // end of header
+	    	insert += '<div id="grabr-notices-details"><table id="grabr-notices"><tr><td id="grabr-notice-title">Notices</td><td id="grabr-notice-info"></td></tr></table></div></div>' // end of header
 	    	insert += '<div id="grabr-screen"></div>'
 	    	$('body').append(insert)
 	    	if(Grabr.reg.cssFileName.test(Grabr.doc.loc)) {
@@ -78,12 +85,13 @@ var Grabr = {
 		for(var i=0; i < l; i++) {
 			if(Grabr.testExternal(imgs[i].src)) {
 				//console.log(Grabr.num, " img tags local")
-				Grabr.getImageData(imgs[i].src, true);
+				Grabr.getImageData(imgs[i].src, true, "image");
 			} else {
 				//console.log(Grabr.images.length, " img tags remote")
 				Grabr.getImageData(imgs[i].src, false);
 			}
 		}
+		
 		Grabr.funcRun++;
 		
 	},
@@ -105,29 +113,52 @@ var Grabr = {
 		Grabr.parseCSSImgs(urls, href);
 		Grabr.funcTot = Grabr.funcRun;
 	},
-	getImageData: function(img, local){
+	getImageData: function(img, local, origin){
 	    
 
-	    function popInfo() {
+	    function popInfo(error) {
 	    	Grabr.testNum++;
-	    	// ImageInfo.getAllFields(file) or ImageInfo.getField(file, field)
-	    	var imgData = {
-	    		src: img,
-	    		format: ImageInfo.getField(img, "format"),
-	    		width: ImageInfo.getField(img, "width"),
-	    		height: ImageInfo.getField(img, "height"),
-	    		bpp: ImageInfo.getField(img, "bpp"), /* Bits per pixel */
-	    		alpha: ImageInfo.getField(img, "alpha"),
-	    		bytes: ImageInfo.getField(img, "byteSize"),
-	    		exif: ImageInfo.getField(img, "exif")
+	    	if(!error) {
+		    	// ImageInfo.getAllFields(file) or ImageInfo.getField(file, field)
+		    	var imgData = {
+		    		src: img,
+		    		format: ImageInfo.getField(img, "format"),
+		    		width: ImageInfo.getField(img, "width"),
+		    		height: ImageInfo.getField(img, "height"),
+		    		bpp: ImageInfo.getField(img, "bpp"), /* Bits per pixel */
+		    		alpha: ImageInfo.getField(img, "alpha"),
+		    		bytes: ImageInfo.getField(img, "byteSize"),
+		    		exif: ImageInfo.getField(img, "exif")
+		    	}
+				Grabr.images.push(imgData);
+				Grabr.readyToPrint();
+	    	} else {
+	    		Grabr.notices.imgs.file.push(img)
+	    		Grabr.notices.imgs.error.push(error)
+	    		Grabr.notices.imgs.origin.push(origin)
+	    		Grabr.readyToPrint();
 	    	}
-			Grabr.images.push(imgData);
-			Grabr.readyToPrint();
 	    }
 	    
+	    //test if image exists move into imageinfo function.
+	    
+	    function urlExists(url) {
+		    var http = new XMLHttpRequest(),
+		    	status = true;
+		    http.open('HEAD', url, false);
+		    http.send();
+		    if(http.status == 404 || http.status == 403) status = false;
+		    return true;
+		}
+	    
 	    if(local) {
-	    	Grabr.num++
-	    	ImageInfo.loadInfo(img, popInfo);
+	    	var test = true //urlExists(img);
+	    	if(test) {
+	 		   	Grabr.num++
+	    		ImageInfo.loadInfo(img, popInfo);
+	    	} else {
+	    		Grabr.readyToPrint();
+	    	}
 	    } else {
 	    	var imgData = {
 			    src: img,
@@ -196,19 +227,25 @@ var Grabr = {
 			    Grabr.parseCSSImgs(urls, linkURL[i]);
 			} else {
 				if(!Grabr.reg.marklet.test(linkURL[i])) {
-					Grabr.notices.push('<a href="'+linkURL[i]+'" title="Click this link to see the style sheet and don\'t forget to ^Grabr it" target="_blank">'+linkURL[i]+'</a><br />');
+					Grabr.notices.ss.push('<a href="'+linkURL[i]+'" title="Click this link to see the style sheet and don\'t forget to ^Grabr it" target="_blank">'+linkURL[i]+'</a><br />');
 				}
 			}
 		}
 		
-		Grabr.funcRun++;				
+		Grabr.funcRun++;
+		Grabr.readyToPrint();
 	},
 	testExternal: function(link){
 		var split = link.split('/');
 		if(Grabr.reg.extLink.test(link)) {
 			if(Grabr.doc.locSplit[2] === split[2]) {
-		    	//console.log('http','has-host', link)
-		    	return true;
+				if(Grabr.reg.marklet.test(link)) {
+					//console.log('http','has-host-grabr', link)
+					return false;
+				} else {
+					//console.log('http','has-host', link)
+		    		return true;
+				}
 		    } else {
 		    	//console.log('http','not-host', link)
 		    	return false;
@@ -256,13 +293,13 @@ var Grabr = {
 						var arr = img.match(Grabr.reg.extLink),
 							http = "";
 						http = (arr[0] == '//') ? "http:" : "";
-						Grabr.getImageData(http + img, true);
+						Grabr.getImageData(http + img, true, href);
 					} else if(Grabr.reg.relURL.test(img)) {
 					
-						Grabr.getImageData(root+img, true);
+						Grabr.getImageData(root+img, true, href);
 					} else {
 					
-						Grabr.getImageData(root+url+img, true);
+						Grabr.getImageData(root+url+img, true, href);
 					}
 				}
 			}
@@ -272,21 +309,34 @@ var Grabr = {
 	},
 	readyToPrint: function(){
 		
-		if(Grabr.funcRun === Grabr.funcTot && Grabr.num === Grabr.testNum) {
+		//console.log(Grabr.funcRun, Grabr.funcTot, Grabr.num, Grabr.testNum)
+		
+		if(Grabr.funcRun === Grabr.funcTot && Grabr.num == Grabr.testNum) {
 			Grabr.printNotices();
 			Grabr.printImages();
 		}
 	},
 	printNotices: function(){
-		var len = Grabr.notices.length,
+		var len = Grabr.notices.ss.length,
 			errSS = "";
 		
 		if(len > 0) {
 			errSS += "Security Exception: Stylesheet is not hosted on the same domain&hellip;<br />"
 			for(var i=0; i < len; i++) {
-				errSS += Grabr.notices[i];
+				errSS += Grabr.notices.ss[i];
 			}
 		}
+		
+		len = Grabr.notices.imgs.file.length
+		if(len > 0) {
+			errSS += "Following images can't be found&hellip;<br />"
+			for(var i=0; i < len; i++) {
+				errSS += "<strong>File:</strong> " + Grabr.notices.imgs.file[i];
+				errSS += " <strong>Error:</strong> " + Grabr.notices.imgs.error[i];
+				errSS += " <strong>Origin:</strong> " + Grabr.notices.imgs.origin[i] + "<br />";
+			}
+		}
+		
 		
 		if(errSS == "") {
 			$('#grabr-notice-info').html('Sweeeeeet as, nothing to report here!')
@@ -387,14 +437,329 @@ var Grabr = {
  * Copyright (c) 2008 Jacob Seidelin, cupboy@gmail.com, http://blog.nihilogic.dk/
  * MIT License [http://www.opensource.org/licenses/mit-license.php]
  */
-var BinaryFile=function(i,g,h){var e=i,f=g||0,c=0;this.getRawData=function(){return e};"string"==typeof i?(c=h||e.length,this.getByteAt=function(a){return e.charCodeAt(a+f)&255}):"unknown"==typeof i&&(c=h||IEBinary_getLength(e),this.getByteAt=function(a){return IEBinary_getByteAt(e,a+f)});this.getLength=function(){return c};this.getSByteAt=function(a){a=this.getByteAt(a);return 127<a?a-256:a};this.getShortAt=function(a,c){var d=c?(this.getByteAt(a)<<8)+this.getByteAt(a+1):(this.getByteAt(a+1)<<8)+ this.getByteAt(a);0>d&&(d+=65536);return d};this.getSShortAt=function(a,c){var d=this.getShortAt(a,c);return 32767<d?d-65536:d};this.getLongAt=function(a,c){var d=this.getByteAt(a),b=this.getByteAt(a+1),e=this.getByteAt(a+2),f=this.getByteAt(a+3),d=c?(((d<<8)+b<<8)+e<<8)+f:(((f<<8)+e<<8)+b<<8)+d;0>d&&(d+=4294967296);return d};this.getSLongAt=function(a,c){var d=this.getLongAt(a,c);return 2147483647<d?d-4294967296:d};this.getStringAt=function(a,c){for(var d=[],b=a,e=0;b<a+c;b++,e++)d[e]=String.fromCharCode(this.getByteAt(b)); return d.join("")};this.getCharAt=function(a){return String.fromCharCode(this.getByteAt(a))};this.toBase64=function(){return window.btoa(e)};this.fromBase64=function(a){e=window.atob(a)}},BinaryAjax=function(){function i(){var e=null;window.XMLHttpRequest?e=new XMLHttpRequest:window.ActiveXObject&&(e=new ActiveXObject("Microsoft.XMLHTTP"));return e}function g(e,f,c){var a=i();a?(f&&("undefined"!=typeof a.onload?a.onload=function(){"200"==a.status?f(this):c&&c();a=null}:a.onreadystatechange=function(){4== a.readyState&&("200"==a.status?f(this):c&&c(),a=null)}),a.open("HEAD",e,!0),a.send(null)):c&&c()}function h(e,f,c,a,j,d){var b=i();if(b){var h=0;a&&!j&&(h=a[0]);var g=0;a&&(g=a[1]-a[0]+1);f&&("undefined"!=typeof b.onload?b.onload=function(){"200"==b.status||"206"==b.status?(this.binaryResponse=new BinaryFile(this.responseText,h,g),this.fileSize=d||this.getResponseHeader("Content-Length"),f(this)):c&&c();b=null}:b.onreadystatechange=function(){4==b.readyState&&("200"==b.status||"206"==b.status?(this.binaryResponse= new BinaryFile(b.responseBody,h,g),this.fileSize=d||this.getResponseHeader("Content-Length"),f(this)):c&&c(),b=null)});b.open("GET",e,!0);b.overrideMimeType&&b.overrideMimeType("text/plain; charset=x-user-defined");a&&j&&b.setRequestHeader("Range","bytes="+a[0]+"-"+a[1]);b.setRequestHeader("If-Modified-Since","Sat, 1 Jan 1970 00:00:00 GMT");b.send(null)}else c&&c()}return function(e,f,c,a){a?g(e,function(g){var d=parseInt(g.getResponseHeader("Content-Length"),10),g=g.getResponseHeader("Accept-Ranges"), b;b=a[0];0>a[0]&&(b+=d);h(e,f,c,[b,b+a[1]-1],"bytes"==g,d)}):h(e,f,c)}}();document.write("<script type='text/vbscript'>\r\nFunction IEBinary_getByteAt(strBinary, iOffset)\r\n\tIEBinary_getByteAt = AscB(MidB(strBinary,iOffset+1,1))\r\nEnd Function\r\nFunction IEBinary_getLength(strBinary)\r\n\tIEBinary_getLength = LenB(strBinary)\r\nEnd Function\r\n<\/script>\r\n");
+//var BinaryFile=function(i,g,h){var e=i,f=g||0,c=0;this.getRawData=function(){return e};"string"==typeof i?(c=h||e.length,this.getByteAt=function(a){return e.charCodeAt(a+f)&255}):"unknown"==typeof i&&(c=h||IEBinary_getLength(e),this.getByteAt=function(a){return IEBinary_getByteAt(e,a+f)});this.getLength=function(){return c};this.getSByteAt=function(a){a=this.getByteAt(a);return 127<a?a-256:a};this.getShortAt=function(a,c){var d=c?(this.getByteAt(a)<<8)+this.getByteAt(a+1):(this.getByteAt(a+1)<<8)+ this.getByteAt(a);0>d&&(d+=65536);return d};this.getSShortAt=function(a,c){var d=this.getShortAt(a,c);return 32767<d?d-65536:d};this.getLongAt=function(a,c){var d=this.getByteAt(a),b=this.getByteAt(a+1),e=this.getByteAt(a+2),f=this.getByteAt(a+3),d=c?(((d<<8)+b<<8)+e<<8)+f:(((f<<8)+e<<8)+b<<8)+d;0>d&&(d+=4294967296);return d};this.getSLongAt=function(a,c){var d=this.getLongAt(a,c);return 2147483647<d?d-4294967296:d};this.getStringAt=function(a,c){for(var d=[],b=a,e=0;b<a+c;b++,e++)d[e]=String.fromCharCode(this.getByteAt(b)); return d.join("")};this.getCharAt=function(a){return String.fromCharCode(this.getByteAt(a))};this.toBase64=function(){return window.btoa(e)};this.fromBase64=function(a){e=window.atob(a)}},BinaryAjax=function(){function i(){var e=null;window.XMLHttpRequest?e=new XMLHttpRequest:window.ActiveXObject&&(e=new ActiveXObject("Microsoft.XMLHTTP"));return e}function g(e,f,c){var a=i();a?(f&&("undefined"!=typeof a.onload?a.onload=function(){"200"==a.status?f(this):c&&c();a=null}:a.onreadystatechange=function(){4== a.readyState&&("200"==a.status?f(this):c&&c(),a=null)}),a.open("HEAD",e,!0),a.send(null)):c&&c()}function h(e,f,c,a,j,d){var b=i();if(b){var h=0;a&&!j&&(h=a[0]);var g=0;a&&(g=a[1]-a[0]+1);f&&("undefined"!=typeof b.onload?b.onload=function(){"200"==b.status||"206"==b.status?(this.binaryResponse=new BinaryFile(this.responseText,h,g),this.fileSize=d||this.getResponseHeader("Content-Length"),f(this)):c&&c();b=null}:b.onreadystatechange=function(){4==b.readyState&&("200"==b.status||"206"==b.status?(this.binaryResponse= new BinaryFile(b.responseBody,h,g),this.fileSize=d||this.getResponseHeader("Content-Length"),f(this)):c&&c(),b=null)});b.open("GET",e,!0);b.overrideMimeType&&b.overrideMimeType("text/plain; charset=x-user-defined");a&&j&&b.setRequestHeader("Range","bytes="+a[0]+"-"+a[1]);b.setRequestHeader("If-Modified-Since","Sat, 1 Jan 1970 00:00:00 GMT");b.send(null)}else c&&c()}return function(e,f,c,a){a?g(e,function(g){var d=parseInt(g.getResponseHeader("Content-Length"),10),g=g.getResponseHeader("Accept-Ranges"), b;b=a[0];0>a[0]&&(b+=d);h(e,f,c,[b,b+a[1]-1],"bytes"==g,d)}):h(e,f,c)}}();document.write("<script type='text/vbscript'>\r\nFunction IEBinary_getByteAt(strBinary, iOffset)\r\n\tIEBinary_getByteAt = AscB(MidB(strBinary,iOffset+1,1))\r\nEnd Function\r\nFunction IEBinary_getLength(strBinary)\r\n\tIEBinary_getLength = LenB(strBinary)\r\nEnd Function\r\n<\/script>\r\n");
+
+/*
+ * Binary Ajax 0.1.5
+ * Copyright (c) 2008 Jacob Seidelin, cupboy@gmail.com, http://blog.nihilogic.dk/
+ * MIT License [http://www.opensource.org/licenses/mit-license.php]
+ */
+
+var BinaryFile = function(strData, iDataOffset, iDataLength) {
+	var data = strData;
+	var dataOffset = iDataOffset || 0;
+	var dataLength = 0;
+
+	this.getRawData = function() {
+		return data;
+	}
+
+	if (typeof strData == "string") {
+		dataLength = iDataLength || data.length;
+		
+		this.getByteAt = function(iOffset) {
+			return data.charCodeAt(iOffset + dataOffset) & 0xFF;
+		}
+	} else if (typeof strData == "unknown") {
+		dataLength = iDataLength || IEBinary_getLength(data);
+
+		this.getByteAt = function(iOffset) {
+			return IEBinary_getByteAt(data, iOffset + dataOffset);
+		}
+	}
+
+	this.getLength = function() {
+		return dataLength;
+	}
+
+	this.getSByteAt = function(iOffset) {
+		var iByte = this.getByteAt(iOffset);
+		if (iByte > 127)
+			return iByte - 256;
+		else
+			return iByte;
+	}
+
+	this.getShortAt = function(iOffset, bBigEndian) {
+		var iShort = bBigEndian ? 
+			(this.getByteAt(iOffset) << 8) + this.getByteAt(iOffset + 1)
+			: (this.getByteAt(iOffset + 1) << 8) + this.getByteAt(iOffset)
+		if (iShort < 0) iShort += 65536;
+		return iShort;
+	}
+	this.getSShortAt = function(iOffset, bBigEndian) {
+		var iUShort = this.getShortAt(iOffset, bBigEndian);
+		if (iUShort > 32767)
+			return iUShort - 65536;
+		else
+			return iUShort;
+	}
+	this.getLongAt = function(iOffset, bBigEndian) {
+		var iByte1 = this.getByteAt(iOffset),
+			iByte2 = this.getByteAt(iOffset + 1),
+			iByte3 = this.getByteAt(iOffset + 2),
+			iByte4 = this.getByteAt(iOffset + 3);
+
+		var iLong = bBigEndian ? 
+			(((((iByte1 << 8) + iByte2) << 8) + iByte3) << 8) + iByte4
+			: (((((iByte4 << 8) + iByte3) << 8) + iByte2) << 8) + iByte1;
+		if (iLong < 0) iLong += 4294967296;
+		return iLong;
+	}
+	this.getSLongAt = function(iOffset, bBigEndian) {
+		var iULong = this.getLongAt(iOffset, bBigEndian);
+		if (iULong > 2147483647)
+			return iULong - 4294967296;
+		else
+			return iULong;
+	}
+	this.getStringAt = function(iOffset, iLength) {
+		var aStr = [];
+		for (var i=iOffset,j=0;i<iOffset+iLength;i++,j++) {
+			aStr[j] = String.fromCharCode(this.getByteAt(i));
+		}
+		return aStr.join("");
+	}
+
+	this.getCharAt = function(iOffset) {
+		return String.fromCharCode(this.getByteAt(iOffset));
+	}
+	this.toBase64 = function() {
+		return window.btoa(data);
+	}
+	this.fromBase64 = function(strBase64) {
+		data = window.atob(strBase64);
+	}
+}
+
+//Callback function from imageInfo
+var BinaryAjax = (function() {
+	
+	function sendRequest(strURL, fncCallback) {
+		
+		var oHTTP = $.ajax({
+	    	url: strURL,
+	    	beforeSend: function(xhr) {
+	    		xhr.overrideMimeType( 'text/plain; charset=x-user-defined' );
+	    	},
+	    	success: function(data) {
+	    		oHTTP.binaryResponse = new BinaryFile(data, 0, 0);
+	    		oHTTP.fileSize = oHTTP.getResponseHeader("Content-Length");
+	    		oHTTP.content = oHTTP.getResponseHeader("Content-Type");
+	    		oHTTP.error = false;
+	    		fncCallback(oHTTP);
+	    	},
+	    	error: function(msg){
+	    		oHTTP.error = msg.status;
+	    		fncCallback(oHTTP);
+	    	}
+	    });
+	}
+	
+	return function(strURL, fncCallback) {
+		sendRequest(strURL, fncCallback);
+	}
+
+}());
+
+document.write(
+	"<script type='text/vbscript'>\r\n"
+	+ "Function IEBinary_getByteAt(strBinary, iOffset)\r\n"
+	+ "	IEBinary_getByteAt = AscB(MidB(strBinary,iOffset+1,1))\r\n"
+	+ "End Function\r\n"
+	+ "Function IEBinary_getLength(strBinary)\r\n"
+	+ "	IEBinary_getLength = LenB(strBinary)\r\n"
+	+ "End Function\r\n"
+	+ "</script>\r\n"
+);
+
+
+
+
+
 
 /*
  * ImageInfo 0.1.2 - A JavaScript library for reading image metadata.
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
  * MIT License [http://www.nihilogic.dk/licenses/mit-license.txt]
  */
-var ImageInfo={useRange:!1,range:10240}; (function(){function h(a,b){BinaryAjax(a,function(c){var e=i(c.binaryResponse),d=c.getResponseHeader("Content-Type");e.mimeType=d;e.byteSize=c.fileSize;f[a]=e;b&&b()},null,ImageInfo.useRange?[0,ImageInfo.range]:null)}function i(a){if(255==a.getByteAt(0)&&216==a.getByteAt(1)){for(var b=0,c=0,e=0,d=a.getLength(),g=2;g<d;){var f=a.getShortAt(g,!0),g=g+2;if(65472==f){c=a.getShortAt(g+3,!0);b=a.getShortAt(g+5,!0);e=a.getByteAt(g+7,!0);break}else g+=a.getShortAt(g,!0)}d={};"undefined"!=typeof EXIF&&EXIF.readFromBinaryFile&& (d=EXIF.readFromBinaryFile(a));return{format:"JPEG",version:"",width:b,height:c,bpp:8*e,alpha:!1,exif:d}}if(137==a.getByteAt(0)&&"PNG"==a.getStringAt(1,3))return b=a.getLongAt(16,!0),c=a.getLongAt(20,!0),d=a.getByteAt(24),e=a.getByteAt(25),4==e&&(d*=2),2==e&&(d*=3),6==e&&(d*=4),a=4<=a.getByteAt(25),{format:"PNG",version:"",width:b,height:c,bpp:d,alpha:a,exif:{}};if("GIF"==a.getStringAt(0,3))return b=a.getStringAt(3,3),c=a.getShortAt(6),e=a.getShortAt(8),a=(a.getByteAt(10)>>4&7)+1,{format:"GIF",version:b, width:c,height:e,bpp:a,alpha:!1,exif:{}};return 66==a.getByteAt(0)&&77==a.getByteAt(1)?(b=a.getLongAt(18),c=a.getLongAt(22),a=a.getShortAt(28),{format:"BMP",version:"",width:b,height:c,bpp:a,alpha:!1,exif:{}}):0==a.getByteAt(0)&&0==a.getByteAt(1)?readICOInfo(a):{format:"UNKNOWN"}}var f=[];ImageInfo.loadInfo=function(a,b){f[a]?b&&b():h(a,b)};ImageInfo.getAllFields=function(a){if(!f[a])return null;var b={},c;for(c in f[a])f[a].hasOwnProperty(c)&&(b[c]=f[a][c]);return b};ImageInfo.getField=function(a, b){return!f[a]?null:f[a][b]}})();
+var ImageInfo = {};
+
+(function() {
+
+	var files = [];
+	
+	//Callback function moved to this function 
+	function readFileData(url, callback) {
+		BinaryAjax(
+			url,
+			function(http) {
+				if(!http.error) {
+					var tags = readInfoFromData(http.binaryResponse);
+					var mime = http.content;
+	
+					tags["mimeType"] = mime;
+					tags["byteSize"] = http.fileSize;
+	
+					files[url] = tags;
+					if (callback) callback(false);
+				} else {
+					if (callback) callback(http.error);
+				}
+			}
+		)
+	}
+
+	function readInfoFromData(data) {
+
+		var offset = 0;
+
+		if (data.getByteAt(0) == 0xFF && data.getByteAt(1) == 0xD8) {
+			return readJPEGInfo(data);
+		}
+		if (data.getByteAt(0) == 0x89 && data.getStringAt(1, 3) == "PNG") {
+			return readPNGInfo(data);
+		}
+		if (data.getStringAt(0,3) == "GIF") {
+			return readGIFInfo(data);
+		}
+		if (data.getByteAt(0) == 0x42 && data.getByteAt(1) == 0x4D) {
+			return readBMPInfo(data);
+		}
+		if (data.getByteAt(0) == 0x00 && data.getByteAt(1) == 0x00) {
+			return readICOInfo(data);
+		}
+
+		return {
+			format : "UNKNOWN"
+		};
+	}
+
+
+	function readPNGInfo(data) {
+		var w = data.getLongAt(16,true);
+		var h = data.getLongAt(20,true);
+
+		var bpc = data.getByteAt(24);
+		var ct = data.getByteAt(25);
+
+		var bpp = bpc;
+		if (ct == 4) bpp *= 2;
+		if (ct == 2) bpp *= 3;
+		if (ct == 6) bpp *= 4;
+
+		var alpha = data.getByteAt(25) >= 4;
+
+		return {
+			format : "PNG",
+			version : "",
+			width : w,
+			height : h,
+			bpp : bpp,
+			alpha : alpha,
+			exif : {}
+		}
+	}
+
+	function readGIFInfo(data) {
+		var version = data.getStringAt(3,3);
+		var w = data.getShortAt(6);
+		var h = data.getShortAt(8);
+
+		var bpp = ((data.getByteAt(10) >> 4) & 7) + 1;
+
+		return {
+			format : "GIF",
+			version : version,
+			width : w,
+			height : h,
+			bpp : bpp,
+			alpha : false,
+			exif : {}
+		}
+	}
+
+	function readJPEGInfo(data) {
+
+		var w = 0;
+		var h = 0;
+		var comps = 0;
+		var len = data.getLength();
+		var offset = 2;
+		while (offset < len) {
+			var marker = data.getShortAt(offset, true);
+			offset += 2;
+			if (marker == 0xFFC0) {
+				h = data.getShortAt(offset + 3, true);
+				w = data.getShortAt(offset + 5, true);
+				comps = data.getByteAt(offset + 7, true)
+				break;
+			} else {
+				offset += data.getShortAt(offset, true)
+			}
+		}
+
+		var exif = {};
+
+		if (typeof EXIF != "undefined" && EXIF.readFromBinaryFile) {
+			exif = EXIF.readFromBinaryFile(data);
+		}
+
+		return {
+			format : "JPEG",
+			version : "",
+			width : w,
+			height : h,
+			bpp : comps * 8,
+			alpha : false,
+			exif : exif
+		}
+	}
+
+	function readBMPInfo(data) {
+		var w = data.getLongAt(18);
+		var h = data.getLongAt(22);
+		var bpp = data.getShortAt(28);
+		return {
+			format : "BMP",
+			version : "",
+			width : w,
+			height : h,
+			bpp : bpp,
+			alpha : false,
+			exif : {}
+		}
+	}
+	
+	//Function called, intiated by Grabr code, Sent via this code at the end back to the initiater
+	ImageInfo.loadInfo = function(url, cb) {
+		if (!files[url]) {
+			readFileData(url, cb);
+		} else {
+			if (cb) cb();
+		}
+	}
+
+	ImageInfo.getAllFields = function(url) {
+		if (!files[url]) return null;
+
+		var tags = {};
+		for (var a in files[url]) {
+			if (files[url].hasOwnProperty(a))
+				tags[a] = files[url][a];
+		}
+		return tags;
+	}
+
+	ImageInfo.getField = function(url, field) {
+		if (!files[url]) return null;
+		return files[url][field];
+	}
+
+
+})();
+
+
 
 /*
  * Javascript EXIF Reader 0.1.2

@@ -9,6 +9,7 @@ a:hover { text-decoration: underline $im; }
 #grabr-header { position: fixed; height: 70px; background-color: rgba(255,255,255,0.95); width: 100%; z-index: 110002; top: 0; cursor: pointer; text-align: left $im;
 	@include box-shadow(0 0 7px #bbb);
 	#grabr-logo { margin: 17px 20px; width: 117px; height: (76px / 2); background: transparent url('logo.png') 0 0 no-repeat; float: left; }
+	#grabr-notices-details { height: 70px; overflow: auto; }
 	#grabr-notices { height: 70px; margin: 0;
 		#grabr-notice-title { width: 50px; font: {weight: bold; size: 15px;} }
 		td { line-height: 12px; font-size: 11px; color: #000; vertical-align: center; height: 70px; padding: 0 30px 0 0; } }
