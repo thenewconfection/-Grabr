@@ -1,6 +1,7 @@
-//javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://thenewconfection.se/projects/grabr/main.js';})();
+//javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://grabr.dev/main.js';})();
 
 //Mark all iframes and produce their links.
+//Test relational URLS again.
 
 var Grabr = {
 	doc: {
@@ -18,28 +19,16 @@ var Grabr = {
 		testURL: /(url\(\S+\))/g,
 		extLink: /^(https?:)?(\/\/)/,
 		cssFileName: /[^\/]*css.*$/,
-		revRemove: /\w*\/$/,
+		revRemove: /[^\/]*\/[^\/]*$/,
 		isImg: /(png)|(jpg)|(jpeg)|(gif)|(bmp)|(ico)/i,
-		marklet: /thenewconfection\.se.*grabr/,
-		relURL: /^(\.{0,2}\/)*/,
+		marklet: /grabr\.dev/, // /thenewconfection\.se.*grabr/,
+		relURL: /^(\.{2}\/)/,
+		rootURL: /^\//,
+		badURL: /^(\.\/)+/,
 		base64: /base64/,
 		favicon: /icon/i
 	},
-	images: [],
 	localImgs: false,
-	funcRun: 0,
-	funcTot: 2,
-	notices: {
-		ss: [],
-		imgs: {
-			file: [],
-			error: [],
-			origin: []
-		},
-		iframes: []
-	},
-	num: 0,
-	testNum: 0,
 	init: function(){
 	
 		Grabr.testForJquery();
@@ -59,20 +48,22 @@ var Grabr = {
 			    s = document.createElement('script');
 			    s.type = 'text/javascript';
 			    document.body.appendChild(s);
-			    s.src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js';
+			    s.src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js';
 			    Grabr.doc.jquery = true;
 			}
 	        setTimeout(Grabr.testForJquery, 100)
 	    } else {
-	    	var insert = '<link type="text/css" rel="stylesheet" href="http://thenewconfection.se/projects/grabr/gfx/default.css" />' //http://grabr.dev/gfx/default.css
+	    	var insert = '<link type="text/css" rel="stylesheet" href="http://grabr.dev/gfx/default.css" />' //http://thenewconfection.se/projects/grabr/gfx/default.css
 	    	insert += '<div id="grabr-header"><div id="grabr-logo"></div>'
 	    	insert += '<div id="grabr-colors"><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div></div>'
-	    	insert += '<div id="grabr-notices-details"><table id="grabr-notices"><tr><td id="grabr-notice-title">Notices</td><td id="grabr-notice-info"></td></tr></table></div></div>' // end of header
+	    	insert += '<div id="grabr-notices-details"><span id="grabr-notices-h">Notices</span><span id="grabr-links-h">Links</span><div id="hide-shadow"></div><div id="grabr-notices"></div><div id="grabr-links"></div></div></div>' // end of header
 	    	insert += '<div id="grabr-screen"></div>'
+	    	insert += '<div id="grabr-images"><p id="grabr-img-tot">Total images found 0</p><div id="grabr-coll-images"></div></div>'
 	    	$('body').append(insert)
 	    	if(Grabr.reg.cssFileName.test(Grabr.doc.loc)) {
 	    		Grabr.cssPage()
 	    	} else {
+	    		Grabr.printImages();
 	    		Grabr.getImages();
 		        Grabr.getCSSImages();
 	    	}	    
@@ -92,8 +83,6 @@ var Grabr = {
 			}
 		}
 		
-		Grabr.funcRun++;
-		
 	},
 	cssPage: function(){
 		//Run if on a document of CSS Styles.
@@ -111,13 +100,11 @@ var Grabr = {
 		urls = text.match(Grabr.reg.testURL);
 		
 		Grabr.parseCSSImgs(urls, href);
-		Grabr.funcTot = Grabr.funcRun;
 	},
 	getImageData: function(img, local, origin){
 	    
 
 	    function popInfo(error) {
-	    	Grabr.testNum++;
 	    	if(!error) {
 		    	// ImageInfo.getAllFields(file) or ImageInfo.getField(file, field)
 		    	var imgData = {
@@ -130,35 +117,21 @@ var Grabr = {
 		    		bytes: ImageInfo.getField(img, "byteSize"),
 		    		exif: ImageInfo.getField(img, "exif")
 		    	}
-				Grabr.images.push(imgData);
-				Grabr.readyToPrint();
+				$(window).trigger('printGrabrImgs', imgData);
 	    	} else {
-	    		Grabr.notices.imgs.file.push(img)
-	    		Grabr.notices.imgs.error.push(error)
-	    		Grabr.notices.imgs.origin.push(origin)
-	    		Grabr.readyToPrint();
+	    		var notices = {
+	    			file: img,
+	    			error: error,
+	    			origin: origin
+	    		}
+	    		$(window).trigger('printGrabrNotices', notices);
 	    	}
 	    }
 	    
-	    //test if image exists move into imageinfo function.
-	    
-	    function urlExists(url) {
-		    var http = new XMLHttpRequest(),
-		    	status = true;
-		    http.open('HEAD', url, false);
-		    http.send();
-		    if(http.status == 404 || http.status == 403) status = false;
-		    return true;
-		}
-	    
 	    if(local) {
-	    	var test = true //urlExists(img);
-	    	if(test) {
-	 		   	Grabr.num++
-	    		ImageInfo.loadInfo(img, popInfo);
-	    	} else {
-	    		Grabr.readyToPrint();
-	    	}
+	    	
+	        ImageInfo.loadInfo(img, popInfo);
+	    
 	    } else {
 	    	var imgData = {
 			    src: img,
@@ -166,28 +139,24 @@ var Grabr = {
 			    width: false,
 			    height: false
 			}
-			Grabr.images.push(imgData);
-			Grabr.readyToPrint();
+			$(window).trigger('printGrabrImgs', imgData);
+			
 	    }
 	},
 	getCSSImages: function(){
-		var linkURL = [],
-			len = 0,
+		var len = 0,
 			icons = [],
-			imgTagArr = [];
-				
-		//console.log(document.styleSheets)
+			cssLink = "";
 		
 		$('link').each(function(){			
-			if($(this).attr('rel').toLowerCase() == 'stylesheet') {
-				linkURL.push($(this).attr('href'));
-			} else if(Grabr.reg.favicon.test($(this).attr('rel'))) {
+			if(Grabr.reg.favicon.test($(this).attr('rel'))) {
 				icons.push($(this).attr('href'));
 			}
 		})
 		
 		len = icons.length;
-		
+
+		// TODO icons need to tested with rel url aswell.
 		for(var i=0; i < len; i++) {
 			var img = "";
 			if(!Grabr.reg.extLink.test(icons[i])) {
@@ -200,12 +169,13 @@ var Grabr = {
 			Grabr.getImageData(img, false);
 		}
 		
-		len = linkURL.length;
+		len = document.styleSheets.length;
 		
 		//Repeats for each style sheet
 		for(var i=0; i < len; i++) {
+			cssLink = document.styleSheets[i].href
 			
-			if(Grabr.testExternal(linkURL[i])) {
+			if(Grabr.testExternal(cssLink)) {
 				
 				var l = document.styleSheets[i].cssRules.length,
 					urls = [];
@@ -224,16 +194,16 @@ var Grabr = {
 			    	}
 			    }
 			    
-			    Grabr.parseCSSImgs(urls, linkURL[i]);
+			    Grabr.parseCSSImgs(urls, cssLink);
 			} else {
-				if(!Grabr.reg.marklet.test(linkURL[i])) {
-					Grabr.notices.ss.push('<a href="'+linkURL[i]+'" title="Click this link to see the style sheet and don\'t forget to ^Grabr it" target="_blank">'+linkURL[i]+'</a><br />');
+				if(!Grabr.reg.marklet.test(cssLink)) {
+
+					$(window).trigger('printGrabrLinks', cssLink);
+					//Grabr.notices.ss.push('<a href="'+cssLink+'" title="Click this link to see the style sheet and don\'t forget to ^Grabr it" target="_blank">'+cssLink+'</a><br />');
 				}
 			}
 		}
 		
-		Grabr.funcRun++;
-		Grabr.readyToPrint();
 	},
 	testExternal: function(link){
 		var split = link.split('/');
@@ -259,106 +229,98 @@ var Grabr = {
 		var len = urlArr.length,
 			openedArr = [],
 			url = href.replace(Grabr.reg.cssFileName, ""),
-			root = Grabr.doc.locSplit[0] + "//" + Grabr.doc.locSplit[2] + "/";
+			root = Grabr.doc.locSplit[0] + "//" + Grabr.doc.locSplit[2] + "/",
+			loc = Grabr.doc.loc,
+			combinedImg = "";
 		
-		
-		if(!Grabr.reg.extLink.test(url)) {
-			url = url.replace(Grabr.reg.relURL, "");
-		}
-		
+		//href gives the absolute url to the stylesheet.
+		//urlArr is an array of all the images.
+
 		for(var i=0; i < len; i++) {
-			var l = openedArr.length,
-				skip = false;
+			var l = openedArr.length;
 				
 			//Remove repeated image links
 			for(var j=0; j < l; j++) {
-				if(openedArr[j] === urlArr[i]) skip = true;
+				if(openedArr[j] === urlArr[i]) continue;
 			}
 			
 			//Record unique images with correct urls
-			if(!skip) {
-				if(Grabr.reg.isImg.test(urlArr[i])) {
-					var img = "";
+			if(Grabr.reg.isImg.test(urlArr[i])) {
+				var img = "";
+				
+				openedArr.push(urlArr[i]);
+				
+				img = urlArr[i].replace(/url\("?/, "").replace(/"?\)/,"");
+				
+				if(Grabr.reg.base64.test(img)) {
+
+					Grabr.getImageData(img, false);
+
+				} else if(Grabr.reg.extLink.test(img)) {
+					var arr = img.match(Grabr.reg.extLink),
+						http = "";
+
+					http = (arr[0] == '//') ? Grabr.doc.locSplit[0] : "";
+					Grabr.getImageData(http + img, true, href);
+
+				} else if(Grabr.reg.relURL.test(img)) {
 					
-					openedArr.push(urlArr[i]);
-					
-					img = urlArr[i].replace(/url\("?/, "").replace(/"?\)/,"");
-					img = img.replace(Grabr.reg.relURL, "");
-					
-					if(Grabr.reg.base64.test(img)) {
-					
-						Grabr.getImageData(img, false);
-					} else if(Grabr.reg.extLink.test(img)) {
-					
-						var arr = img.match(Grabr.reg.extLink),
-							http = "";
-						http = (arr[0] == '//') ? "http:" : "";
-						Grabr.getImageData(http + img, true, href);
-					} else if(Grabr.reg.relURL.test(img)) {
-					
-						Grabr.getImageData(root+img, true, href);
-					} else {
-					
-						Grabr.getImageData(root+url+img, true, href);
-					}
+					//remove sections off the css url depending on the number of ../'s
+					cssHref = url.split('/');
+					cssHref.pop();
+					function removeRel() {
+						img = img.replace(Grabr.reg.relURL, "");
+						if(cssHref.length > 4) cssHref.pop();
+						combinedImg = cssHref.join('/') + '/' + img;
+						console.log(combinedImg);
+
+						if(Grabr.reg.relURL.test(img)) {
+							setTimeout(removeRel, 1);
+						} else {
+							Grabr.getImageData(combinedImg, true, href);
+						}
+					};
+					removeRel();
+
+				} else if(Grabr.reg.rootURL.test(img)) {
+					img = img.replace(Grabr.reg.rootURL, "");
+					Grabr.getImageData(root+img, true, href);
+
+				} else {
+					img = img.replace(Grabr.reg.badURL, "");
+					Grabr.getImageData(url+img, true, href);
+
 				}
 			}
 				
 		} //End for loop
 		
 	},
-	readyToPrint: function(){
-		
-		//console.log(Grabr.funcRun, Grabr.funcTot, Grabr.num, Grabr.testNum)
-		
-		if(Grabr.funcRun === Grabr.funcTot && Grabr.num == Grabr.testNum) {
-			Grabr.printNotices();
-			Grabr.printImages();
-		}
-	},
-	printNotices: function(){
-		var len = Grabr.notices.ss.length,
-			errSS = "";
-		
-		if(len > 0) {
-			errSS += "Security Exception: Stylesheet is not hosted on the same domain&hellip;<br />"
-			for(var i=0; i < len; i++) {
-				errSS += Grabr.notices.ss[i];
-			}
-		}
-		
-		len = Grabr.notices.imgs.file.length
-		if(len > 0) {
-			errSS += "Following images can't be found&hellip;<br />"
-			for(var i=0; i < len; i++) {
-				errSS += "<strong>File:</strong> " + Grabr.notices.imgs.file[i];
-				errSS += " <strong>Error:</strong> " + Grabr.notices.imgs.error[i];
-				errSS += " <strong>Origin:</strong> " + Grabr.notices.imgs.origin[i] + "<br />";
-			}
-		}
-		
-		
-		if(errSS == "") {
-			$('#grabr-notice-info').html('Sweeeeeet as, nothing to report here!')
-		} else {
-			$('#grabr-notice-info').html(errSS);
-		}
-		
-	},
 	printImages: function(){
-		//Final function to be run once all other threads are finished.
-		var len = Grabr.images.length,
-			errArr = [],
-			errLen = 0,
-			imgs = "";
+		var counter = 0;
 		
-		for(var i=0; i < len; i++) {
-			if(!Grabr.images[i].format) {
-				errArr.push({'num': i, 'src': Grabr.images[i].src}) 
-				errLen++;	
-			}
-			var exifData = "",
-				oData = Grabr.images[i].exif;
+		$(window).on('printGrabrLinks', function(e, cssLink) {
+			var link = '<a href="'+cssLink+'" title="Click this link to see the style sheet and don\'t forget to ^Grabr it" target="_blank">'+cssLink+'</a><br />';
+
+			$('#grabr-links').append(link);
+			if(!$('#grabr-links-h').hasClass('details')) $('#grabr-links-h').addClass('details')
+		})
+
+		$(window).on('printGrabrNotices', function(e, obj) {
+			var errSS = "";
+			errSS += "<strong>File:</strong> " + obj.file + "<br />";
+			errSS += " <strong>Error:</strong> " + obj.error;
+			errSS += " <strong>Origin:</strong> " + obj.origin + "<br />";
+
+			$('#grabr-notices').append(errSS);
+			if(!$('#grabr-notices-h').hasClass('details')) $('#grabr-notices-h').addClass('details')
+		})
+
+		$(window).on('printGrabrImgs', function(e, obj) {
+			var imgs = "",
+				exifData = "",
+				oData = obj.exif;
+
 			for (var a in oData) {
 				if (oData.hasOwnProperty(a)) {
 					if (typeof oData[a] == "object") {
@@ -368,13 +330,59 @@ var Grabr = {
 					}
 				}
 			}
-			imgs += '<div id="grabr-'+i+'" class="grabr-image-area"><img class="grabr-image" src="' + Grabr.images[i].src + '" /><br />';
+
+			imgs += '<div id="grabr-'+counter+'" class="grabr-image-area"><img class="grabr-image" src="' + obj.src + '" /><br />';
 			imgs += '<table class="grabr-detail-table"><thead><tr><th>Source</th><th>Format</th><th>Width</th><th>Height</th><th>Bits</th><th>Alpha</th><th>Size</th><th>EXIF</th></tr></thead>';
-			imgs += '<tbody><tr><td class="grabr-wide-col" id="grabr-img">'+Grabr.images[i].src+'</td><td id="grabr-for">'+Grabr.images[i].format+'</td><td id="grabr-w">'+Grabr.images[i].width+'</td><td id="grabr-h">'+Grabr.images[i].height+'</td><td>'+Grabr.images[i].bpp+'</td><td>'+Grabr.images[i].alpha+'</td><td>'+Grabr.images[i].bytes+'</td><td  class="grabr-wide-col">'+exifData+'</td></tr></tbody></table></div>';
-		}
-		
-		$('body').append('<div id="grabr-images"><p id="grabr-img-tot">Total images found '+len+'</p>'+imgs+'</div>');
-		
+			imgs += '<tbody><tr><td class="grabr-wide-col" id="grabr-img">'+obj.src+'</td><td id="grabr-for">'+obj.format+'</td><td id="grabr-w">'+obj.width+'</td><td id="grabr-h">'+obj.height+'</td><td>'+obj.bpp+'</td><td>'+obj.alpha+'</td><td>'+obj.bytes+'</td><td  class="grabr-wide-col">'+exifData+'</td></tr></tbody></table></div>';
+
+			$('#grabr-img-tot').html('Total images found '+(counter+1));
+			$('#grabr-coll-images').append(imgs);
+
+			if(!obj.format) {
+				var src = obj.src,
+					$el = $('#grabr-'+counter),
+					w = 0,
+					h = 0,
+					f = "";
+					
+				w = $el.find('img').width();
+				h = $el.find('img').height();
+				f = Grabr.reg.isImg.exec(src);
+				if(f) {
+					f = f[0].toUpperCase()
+				}
+				$el.find('#grabr-img').html('<a href="'+src+'" title="Go to source and use bookmarklet there for more info on this image">'+src+'</a>');
+				$el.find('#grabr-for').html(f);
+				$el.find('#grabr-w').text(w);
+				$el.find('#grabr-h').text(h);
+			}
+			counter++;
+			
+		})
+
+		$('#grabr-notices-h').on('click', function() {
+			if($(this).hasClass('details')) {
+				if($('#grabr-notices').hasClass('showing')) {
+					$('#grabr-notices').removeClass('showing').hide()
+				} else {
+					$('#grabr-links').hide()
+					$('#grabr-notices').addClass('showing').show()
+				}
+			}
+		})
+
+		$('#grabr-links-h').on('click', function() {
+			if($(this).hasClass('details')) {
+				if($('#grabr-links').hasClass('showing')) {
+					$('#grabr-links').removeClass('showing').hide()
+				} else {
+					$('#grabr-notices').hide()
+					$('#grabr-links').addClass('showing').show()
+				}
+			}
+		})
+
+		/*
 		$('#grabr-header').on('click', function(){
 			if(Grabr.set.showImgs) {
 				$('#grabr-screen').fadeIn(200, function(){
@@ -386,28 +394,8 @@ var Grabr = {
 				$('#grabr-screen').fadeOut();
 				Grabr.set.showImgs = true;
 			}
-			
 		})
-		
-		for(var i=0; i < errLen; i++) {
-			var src = errArr[i].src,
-				num = errArr[i].num,
-				$el = $('#grabr-'+num),
-				w = 0,
-				h = 0,
-				f = "";
-				
-			w = $el.find('img').width();
-			h = $el.find('img').height();
-			f = Grabr.reg.isImg.exec(src);
-			if(f) {
-				f = f[0].toUpperCase()
-			}
-			$el.find('#grabr-img').html('<a href="'+src+'" title="Go to source and use bookmarklet there for more info on this image">'+src+'</a>');
-			$el.find('#grabr-for').html(f);
-			$el.find('#grabr-w').text(w);
-			$el.find('#grabr-h').text(h);
-		}
+		*/
 		
 		function changeColorTo(color) {
 			$('#grabr-screen').css('background-color', color)
