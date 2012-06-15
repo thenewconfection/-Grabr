@@ -1,4 +1,6 @@
-//javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://grabr.dev/main.js';})();
+//javascript:(function(){document.body.appendChild(document.createElement('script')).src='http://thenewconfection.se/projects/grabr/main.js';})(); 
+//http://thenewconfection.se/projects/grabr/main.js
+//http://grabr.dev/main.js
 
 //Mark all iframes and produce their links.
 //Test relational URLS again.
@@ -21,7 +23,7 @@ var Grabr = {
 		cssFileName: /[^\/]*css.*$/,
 		revRemove: /[^\/]*\/[^\/]*$/,
 		isImg: /(png)|(jpg)|(jpeg)|(gif)|(bmp)|(ico)/i,
-		marklet: /grabr\.dev/, // /thenewconfection\.se.*grabr/,
+		marklet: /thenewconfection\.se.*grabr/, // /grabr\.dev/,
 		relURL: /^(\.{2}\/)/,
 		rootURL: /^\//,
 		badURL: /^(\.\/)+/,
@@ -53,7 +55,7 @@ var Grabr = {
 			}
 	        setTimeout(Grabr.testForJquery, 100)
 	    } else {
-	    	var insert = '<link type="text/css" rel="stylesheet" href="http://grabr.dev/gfx/default.css" />' //http://thenewconfection.se/projects/grabr/gfx/default.css
+	    	var insert = '<link type="text/css" rel="stylesheet" href="http://thenewconfection.se/projects/grabr/gfx/default.css" />' //http://grabr.dev/gfx/default.css
 	    	insert += '<div id="grabr-header"><div id="grabr-logo"></div>'
 	    	insert += '<div id="grabr-colors"><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div><div class="grabr-bg-color"></div></div>'
 	    	insert += '<div id="grabr-notices-details"><span id="grabr-notices-h">Notices</span><span id="grabr-links-h">Links</span><div id="hide-shadow"></div><div id="grabr-notices"></div><div id="grabr-links"></div></div></div>' // end of header
@@ -199,7 +201,6 @@ var Grabr = {
 				if(!Grabr.reg.marklet.test(cssLink)) {
 
 					$(window).trigger('printGrabrLinks', cssLink);
-					//Grabr.notices.ss.push('<a href="'+cssLink+'" title="Click this link to see the style sheet and don\'t forget to ^Grabr it" target="_blank">'+cssLink+'</a><br />');
 				}
 			}
 		}
