@@ -64,11 +64,12 @@ var Grabr = {
 	    	insert += '<div id="grabr-images"><p id="grabr-img-tot">Total images found 0</p><div id="grabr-coll-images"></div></div>'
 	    	$('body').append(insert)
 	    	if(Grabr.reg.cssFileName.test(Grabr.doc.loc)) {
-	    		Grabr.cssPage()
+				Grabr.cssPage()
 	    	} else {
-	    		Grabr.printImages();
-	    		Grabr.getImages();
-		        Grabr.getCSSImages();
+				Grabr.printImages();
+				Grabr.getImages();
+				Grabr.getFrames();
+				Grabr.getCSSImages();
 	    	}	    
 		}
 	},
@@ -85,7 +86,16 @@ var Grabr = {
 				Grabr.getImageData(imgs[i].src, false, "image");
 			}
 		}
-		
+
+	},
+	getFrames: function() {
+
+		if($('iframe').length > 0) {
+			$('iframe').each(function() {
+				$(window).trigger('printGrabrLinks', $(this).attr('src'));
+			})
+		}
+
 	},
 	cssPage: function(){
 		//Run if on a document of CSS Styles.
@@ -108,8 +118,20 @@ var Grabr = {
 	    
 
 	    function popInfo(error) {
+	    	var imgBytes = 0,
+	    		byteSize = "";
+
 	    	if(!error) {
 		    	// ImageInfo.getAllFields(file) or ImageInfo.getField(file, field)
+		    	imgBytes = ImageInfo.getField(img, "byteSize");
+		    	
+		    	if(imgBytes < 512) {
+		    		byteSize = imgBytes + " b";
+		    	} else if(imgBytes < 524288) {
+		    		byteSize = Math.round(imgBytes/1024*100)/100 + " kb";
+		    	} else {
+		    		byteSize = Math.round(imgBytes/1048576*100)/100 + " mb";
+		    	}
 		    	var imgData = {
 		    		src: img,
 		    		loc: location,
@@ -118,7 +140,7 @@ var Grabr = {
 		    		height: ImageInfo.getField(img, "height"),
 		    		bpp: ImageInfo.getField(img, "bpp"), /* Bits per pixel */
 		    		alpha: ImageInfo.getField(img, "alpha"),
-		    		bytes: ImageInfo.getField(img, "byteSize"),
+		    		bytes: byteSize,
 		    		exif: ImageInfo.getField(img, "exif")
 		    	}
 				$(window).trigger('printGrabrImgs', imgData);
@@ -179,7 +201,8 @@ var Grabr = {
 		//Repeats for each style sheet
 		for(var i=0; i < len; i++) {
 			cssLink = document.styleSheets[i].href
-			
+			if(!cssLink) continue;
+
 			if(Grabr.testExternal(cssLink)) {
 				
 				var l = document.styleSheets[i].cssRules.length,
@@ -241,13 +264,16 @@ var Grabr = {
 		//urlArr is an array of all the images.
 
 		for(var i=0; i < len; i++) {
-			var l = openedArr.length;
-				
+			var l = openedArr.length,
+				skip = false;
+			
 			//Remove repeated image links
 			for(var j=0; j < l; j++) {
-				if(openedArr[j] === urlArr[i]) continue;
+				if(openedArr[j] === urlArr[i]) skip = true;
 			}
 			
+			if(skip) continue;
+
 			//Record unique images with correct urls
 			if(Grabr.reg.isImg.test(urlArr[i])) {
 				var img = "";
